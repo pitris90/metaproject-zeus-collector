@@ -209,3 +209,5 @@ __marimo__/
 *.pyc
 
 .vscode/
+src/providers/pbs/OpenPBS/pbs_ifl_wrap.c
+src/providers/pbs/OpenPBS/pbs_ifl.py
