@@ -1,0 +1,67 @@
+CPU, count by (hostname, model, cores, threads) (cpumon_cpu_info)
+prod-brno https://direct-thanos-query.brno.openstack.cloud.e-infra.cz/graph?g0.expr=count%20by%20(hostname%2C%20model%2C%20cores%2C%20threads)%20(cpumon_cpu_info)&g0.tab=1&g0.stacked=0&g0.show_exemplars=0&g0.range_input=1h 
+RAM, node_memory_MemTotal_bytes,
+stage-brno https://prometheus.stage.brno.openstack.cloud.e-infra.cz/graph?g0.expr=node_memory_MemTotal_bytes&g0.tab=0&g0.stacked=0&g0.show_exemplars=0&g0.range_input=6h
+prod-brno https://direct-thanos-query.brno.openstack.cloud.e-infra.cz/graph?g0.expr=node_memory_MemTotal_bytes&g0.tab=0&g0.stacked=0&g0.show_exemplars=0&g0.range_input=1h 
+GPU, gpumon_device_state_code
+https://direct-thanos-query.brno.openstack.cloud.e-infra.cz/graph?g0.expr=gpumon_device_state_code&g0.tab=1&g0.stacked=0&g0.show_exemplars=0&g0.range_input=1h 
+disk, smartmon_device_info
+https://direct-thanos-query.brno.openstack.cloud.e-infra.cz/graph?g0.expr=smartmon_device_info&g0.tab=1&g0.stacked=0&g0.show_exemplars=0&g0.range_input=1h&g0.end_input=2025-09-01%2008%3A52%3A38&g0.moment_input=2025-09-01%2008%3A52%3A38 
+ukázka agregace pomocí PromQL: https://direct-thanos-query.brno.openstack.cloud.e-infra.cz/graph?g0.expr=smartmon_device_info%7Bhostname%3D%22hdi-001-meta%22%7D&g0.tab=1&g0.stacked=0&g0.show_exemplars=0&g0.range_input=1h&g0.end_input=2025-09-01%2008%3A52%3A38&g0.moment_input=2025-09-01%2008%3A52%3A38&g1.expr=count%20by(device_model%2C%20hostname)%20(smartmon_device_info%7Bhostname%3D%22hdi-001-meta%22%7D)&g1.tab=1&g1.stacked=0&g1.show_exemplars=0&g1.range_input=1h 
+net, count by (hostname, speed_mbps, driver) (nicmon_info)
+https://direct-thanos-query.brno.openstack.cloud.e-infra.cz/graph?g0.expr=count%20by%20(hostname%2C%20speed_mbps%2C%20driver)%20(nicmon_info)&g0.tab=1&g0.stacked=0&g0.show_exemplars=0&g0.range_input=1h 
+vlastník strojů, count by (node, label_owner) (kube_node_labels{label_owner!=""})
+https://direct-thanos-query.brno.openstack.cloud.e-infra.cz/graph?g0.expr=kube_node_labels%7Blabel_owner!%3D%22%22%7D&g0.tab=1&g0.stacked=0&g0.show_exemplars=0&g0.range_input=1h 
+počet VM strojů na hypervizoru
+https://direct-thanos-query.brno.openstack.cloud.e-infra.cz/graph?g0.expr=count%20by(hostname)(libvirtd_domain_domain_state)&g0.tab=1&g0.stacked=0&g0.show_exemplars=0&g0.range_input=1h 
+
+https://direct-thanos-query.brno.openstack.cloud.e-infra.cz/graph?g0.expr=openstack_identity_project_info%7Bdescription%3D~%22.*ad435aeaf373efe0d7255a56c7567d1350e12f0a%40einfra.cesnet.cz.*%22%7D&g0.tab=1&g0.stacked=0&g0.range_input=1h&g0.max_source_resolution=0s&g0.deduplicate=1&g0.partial_response=1&g0.store_matches=%5B%5D&g0.engine=prometheus&g0.analyze=0&g0.tenant=&g1.expr=custom_openstack_server_info%7Bproject_id%3D%278ba44a12ad0d4f778cf7275689d085a5%27%7D&g1.tab=1&g1.stacked=0&g1.range_input=1h&g1.max_source_resolution=0s&g1.deduplicate=1&g1.partial_response=1&g1.store_matches=%5B%5D&g1.engine=prometheus&g1.analyze=0&g1.tenant=
+ostatní v openstack & pbsmon diskuze
+lze zjistit vsechny ostack projekty? ano https://direct-thanos-query.brno.openstack.cloud.e-infra.cz/graph?g0.expr=openstack_identity_project_info%7Bdescription%3D~%22.*%22%7D&g0.tab=1&g0.stacked=0&g0.range_input=1h&g0.max_source_resolution=0s&g0.deduplicate=1&g0.partial_response=1&g0.store_matches=%5B%5D&g0.engine=prometheus&g0.analyze=0&g0.tenant= 
+
+
+
+cat <<EOF | sudo tee /etc/apt/sources.list.d/myrepo.list
+deb [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ all main pilot
+deb [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ bookworm main pilot
+deb-src [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ all main pilot
+deb-src [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ bookworm main pilot
+EOF
+
+sudo apt-get update
+sudo apt-get install -y gnupg curl ca-certificates
+
+cat key.asc | gpg --dearmor | sudo tee /usr/share/keyrings/metacentrum-repo.gpg > /dev/null
+sudo chmod 644 /usr/share/keyrings/metacentrum-repo.gpg
+cat <<EOF | sudo tee /etc/apt/sources.list.d/myrepo.list
+deb [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ all main pilot
+deb [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ bookworm main pilot
+deb-src [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ all main pilot
+deb-src [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ bookworm main pilot
+EOF
+
+sudo apt-get update
+sudo apt-get install libopenpbs-dev
+
+
+sudo apt install krb5-user openssh-client
+sudo scp petrb@skirit.ics.muni.cz:/etc/krb5.conf /etc/ 
+touch ~/.ssh/config
+kinit petrb@META
+kinit -r 7d petrb@META
+sudo scp petrb@tarkil.grid.cesnet.cz:/etc/pbs.conf /etc/
+cat key.asc | gpg --dearmor | sudo tee /usr/share/keyrings/metacentrum-repo.gpg > /dev/null
+sudo chmod 644 /usr/share/keyrings/metacentrum-repo.gpg
+sudo apt-get install -y gnupg curl ca-certificates
+cat <<EOF | sudo tee /etc/apt/sources.list.d/myrepo.list
+deb [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ all main pilot
+deb [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ bookworm main pilot
+deb-src [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ all main pilot
+deb-src [signed-by=/usr/share/keyrings/metacentrum-repo.gpg]  https://repo.metacentrum.cz/ bookworm main pilot
+EOF
+sudo apt-get update
+sudo apt-get install libopenpbs-dev
+sudo apt-get install -y make gcc
+sudo apt-get install -y swig build-essential python3-dev python3-distutils python3-venv libssl-dev pkg-config
+alias python='python3'
+make

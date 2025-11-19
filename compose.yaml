@@ -1,0 +1,14 @@
+services:
+  zeus-collector:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src:ro
+    restart: unless-stopped
+    networks:
+      - zeus-collector-net
+
+networks:
+  zeus-collector-net:
+    driver: bridge
