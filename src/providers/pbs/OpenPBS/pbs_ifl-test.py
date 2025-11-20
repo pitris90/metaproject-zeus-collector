@@ -1,8 +1,8 @@
-import sys
+import os
 import pbs_ifl
 from typing import Any
 
-server = "pbs-m1.metacentrum.cz"
+server = os.environ.get("PBS_HOST", "pbs-m1.metacentrum.cz")
 
 c = None
 
@@ -19,7 +19,7 @@ except Exception:
     print("failed to get server info")
     exit(1)
 try:
-    queue_info: Any = pbs_ifl.pbs_statque(c, None, None, None) # pyright: ignore[reportUnknownVariableType]
+    queue_info: Any = pbs_ifl.pbs_statque(c, None, None, None)
     # print(queue_info)
 except Exception:
     print("failed to get queues info")

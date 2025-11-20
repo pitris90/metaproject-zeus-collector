@@ -1,10 +1,15 @@
 services:
   zeus-collector:
-    build: .
+    build:
+      context: .
+      args:
+        PBS_REPO_KEY_URL: ${PBS_REPO_KEY_URL}
+        PBS_SSH_USER: ${PBS_USER}
+        PBS_SSH_PASSWORD: ${PBS_PASSWORD}
+        PBS_KRB_CONF_HOST: ${PBS_KRB_CONF_HOST}
+        PBS_CONF_HOST: ${PBS_CONF_HOST}
     env_file:
       - .env
-    volumes:
-      - ./src:/app/src:ro
     restart: unless-stopped
     networks:
       - zeus-collector-net
