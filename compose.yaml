@@ -10,10 +10,13 @@ services:
         PBS_CONF_HOST: ${PBS_CONF_HOST}
     env_file:
       - .env
-    restart: unless-stopped
     networks:
       - zeus-collector-net
+      - resource-manager-common
 
 networks:
   zeus-collector-net:
     driver: bridge
+  resource-manager-common:
+    external: true
+    name: metaproject-zeus_common

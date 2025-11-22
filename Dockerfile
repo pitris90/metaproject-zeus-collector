@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_VERSION=1.8.3 \
     PIP_NO_CACHE_DIR=1 \
     KRB5_CONFIG=/env/krb5.conf \
-    PYTHONPATH=/app/src
+    PYTHONPATH=/app/src:/app/src/providers/pbs/OpenPBS
 
 WORKDIR /app
 
