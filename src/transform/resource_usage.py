@@ -34,6 +34,7 @@ def build_resource_usage_event(
     context: dict[str, Any],
     extra: Optional[dict[str, Any]] = None,
     identities: Optional[List[ResourceIdentity]] = None,
+    project_name: Optional[str] = None,
 ) -> ResourceUsageEvent:
     """
     Build a ResourceUsageEvent from components.
@@ -45,6 +46,8 @@ def build_resource_usage_event(
         metrics: Resource usage metrics
         context: Additional contextual information
         extra: Optional extra data
+        identities: List of resource identities
+        project_name: Optional project name extracted from context
 
     Returns:
         ResourceUsageEvent object
@@ -55,6 +58,7 @@ def build_resource_usage_event(
         time_window_start=time_window_start,
         time_window_end=time_window_end,
         collected_at=datetime.now(timezone.utc),
+        project_name=project_name,
         metrics=metrics,
         context=context,
         extra=extra,

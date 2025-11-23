@@ -127,6 +127,7 @@ def build_project_usage_from_pbs_jobs(
                 context=context,
                 extra=None,
                 identities=identities,
+                project_name=project,  # Extract project from context
             )
         )
 
@@ -203,6 +204,7 @@ def build_project_usage_from_accounting(
                 context=context,
                 extra=None,
                 identities=identities,
+                project_name=project,  # Extract project from context
             )
         )
 

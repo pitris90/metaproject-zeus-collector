@@ -458,6 +458,7 @@ def build_project_usage_from_openstack(
             context=context,
             extra=None,
             identities=identities,
+            project_name=project_name or project_id,  # Extract project from context
         )
         events.append(event)
 

@@ -66,6 +66,9 @@ class ResourceUsageEvent(BaseModel):
     collected_at: datetime = Field(
         ..., description="Timestamp when data was collected"
     )
+    project_name: Optional[str] = Field(
+        None, description="Project name extracted from context"
+    )
     metrics: ResourceUsageMetrics = Field(
         ..., description="Resource usage metrics"
     )
