@@ -24,6 +24,21 @@ from .resource_usage import aggregate_metrics, build_resource_usage_event
 from .convert import parse_memory_bytes
 
 
+def is_personal_project(description: Optional[str]) -> bool:
+    """
+    Determine if a project is a personal project based on its description.
+
+    Args:
+        description: Project description text
+
+    Returns:
+        True if description starts with "Personal project", False otherwise
+    """
+    if not description:
+        return False
+    return description.strip().startswith("Personal project")
+
+
 def _sample_value(sample: dict[str, Any]) -> Optional[float]:
     value = sample.get("value")
     if not isinstance(value, (list, tuple)) or len(value) != 2:
@@ -69,7 +84,7 @@ def _build_identities_from_project(
     """
     Build identity list from OpenStack project name and description.
 
-    Personal projects (project_name ends with @einfra.cesnet.cz):
+    Personal projects (project description starts with "Personal project"):
       - Add oidc_sub identity with project_name as value
       - Parse email from description ending with "with contact address <email>"
       - Skip adding user_email if it's the same as project_name (oidc_sub)
@@ -87,8 +102,8 @@ def _build_identities_from_project(
     identities: list[ResourceIdentity] = []
 
     # Check if it's a personal project
-    is_personal_project = project_name and project_name.endswith("@einfra.cesnet.cz")
-    if is_personal_project and project_name:
+    personal_project = is_personal_project(description)
+    if personal_project and project_name:
         identities.append(
             ResourceIdentity(
                 scheme="oidc_sub",
@@ -96,14 +111,12 @@ def _build_identities_from_project(
                 authority=None,
             )
         )
+        return identities
 
     # Parse emails from description
     if description:
         emails = _parse_emails_from_text(description)
         for email in emails:
-            # Skip adding email if it's the same as project_name in personal projects
-            if is_personal_project and email == project_name:
-                continue
             identities.append(
                 ResourceIdentity(
                     scheme="user_email",
@@ -416,12 +429,12 @@ def build_project_usage_from_openstack(
                     "uuid": uuid,
                     "name": srv.get("name"),
                     "region": srv.get("region"),
-                    "vcpus": vcpus or None,
-                    "memory_current_bytes": memory_current_bytes or None,
-                    "memory_maximum_bytes": memory_maximum_bytes or None,
-                    "storage_allocated_bytes": storage_bytes or None,
+                    "vcpus": vcpus,
+                    "memory_current_bytes": memory_current_bytes,
+                    "memory_maximum_bytes": memory_maximum_bytes,
+                    "storage_allocated_bytes": storage_bytes,
                     "used_cpu_percent": int(used_cpu_percent) if used_cpu_percent else None,
-                    "cpu_time_seconds": cpu_time_seconds or None,
+                    "cpu_time_seconds": int(cpu_time_seconds),
                 }
             )
 
@@ -432,13 +445,15 @@ def build_project_usage_from_openstack(
 
         metrics = aggregate_metrics(
             cpu_time_seconds=int(total_cpu_time_seconds) if total_cpu_time_seconds else 0,
-            ram_bytes_allocated=total_ram_bytes_maximum or None,
-            ram_bytes_used=total_ram_bytes_current or None,
-            vcpus_allocated=total_vcpus or None,
-            storage_bytes_allocated=total_storage_bytes or None,
+            ram_bytes_allocated=total_ram_bytes_maximum,
+            ram_bytes_used=total_ram_bytes_current,
+            vcpus_allocated=total_vcpus,
+            storage_bytes_allocated=total_storage_bytes,
             used_cpu_percent=project_used_cpu_percent,
         )
 
+        is_personal = is_personal_project(description)
+        
         context: dict[str, Any] = {
             "cloud": "openstack",
             "project": project_name or project_id,
@@ -459,6 +474,7 @@ def build_project_usage_from_openstack(
             extra=None,
             identities=identities,
             project_name=project_name or project_id,  # Extract project from context
+            is_personal=is_personal,
         )
         events.append(event)
 

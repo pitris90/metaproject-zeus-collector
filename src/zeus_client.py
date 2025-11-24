@@ -60,15 +60,19 @@ class ZeusClient:
 
         total_sent = 0
         total_failed = 0
+        total_batches = len(batches)
 
         for batch_idx, batch in enumerate(batches, start=1):
             console.log(
-                f"[cyan]Processing batch {batch_idx}/{len(batches)} "
+                f"[cyan]Processing batch {batch_idx}/{total_batches} "
                 f"({len(batch)} events)[/cyan]"
             )
 
+            # Mark if this is the last batch
+            is_last_batch = (batch_idx == total_batches)
+
             try:
-                self._send_batch(batch)
+                self._send_batch(batch, is_last_batch)
                 total_sent += len(batch)
                 console.log(
                     f"[green]✓ Batch {batch_idx} sent successfully[/green]"
@@ -88,19 +92,21 @@ class ZeusClient:
                 f"Failed to send {total_failed} events to ZEUS API"
             )
 
-    def _send_batch(self, batch: list[ResourceUsageEvent]) -> None:
+    def _send_batch(self, batch: list[ResourceUsageEvent], is_last_batch: bool = False) -> None:
         """
         Send a single batch of events to ZEUS API.
 
         Args:
             batch: List of events to send in this batch
+            is_last_batch: Whether this is the last batch in the sequence
 
         Raises:
             httpx.HTTPError: If the request fails
         """
         url = f"{self.endpoint}/collector/resource-usage"
         payload = {
-            "events": [event.model_dump(mode="json") for event in batch]
+            "events": [event.model_dump(mode="json") for event in batch],
+            "is_last_batch": is_last_batch
         }
         
         headers = self._get_headers()

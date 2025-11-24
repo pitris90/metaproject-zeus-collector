@@ -35,6 +35,7 @@ def build_resource_usage_event(
     extra: Optional[dict[str, Any]] = None,
     identities: Optional[List[ResourceIdentity]] = None,
     project_name: Optional[str] = None,
+    is_personal: bool = False,
 ) -> ResourceUsageEvent:
     """
     Build a ResourceUsageEvent from components.
@@ -48,6 +49,7 @@ def build_resource_usage_event(
         extra: Optional extra data
         identities: List of resource identities
         project_name: Optional project name extracted from context
+        is_personal: Whether this is a personal project
 
     Returns:
         ResourceUsageEvent object
@@ -59,6 +61,7 @@ def build_resource_usage_event(
         time_window_end=time_window_end,
         collected_at=datetime.now(timezone.utc),
         project_name=project_name,
+        is_personal=is_personal,
         metrics=metrics,
         context=context,
         extra=extra,

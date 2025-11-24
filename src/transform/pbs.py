@@ -86,6 +86,7 @@ def build_project_usage_from_pbs_jobs(
         ram_used = parse_memory_bytes(job.get("resources_used.mem"))
         vcpus_allocated = _to_int(job.get("resources_used.ncpus"))
         raw_cpu_percent = _to_int(job.get("resources_used.cpupercent"))
+        storage_allocated = parse_memory_bytes(job.get("Resource_List.scratch_local"))
 
         # Convert cpupercent to 0-100 scale by dividing by vcpus
         used_cpu_percent = None
@@ -100,6 +101,7 @@ def build_project_usage_from_pbs_jobs(
             used_cpu_percent=used_cpu_percent,
             walltime_allocated=walltime_allocated,
             walltime_used=walltime_used,
+            storage_bytes_allocated=storage_allocated,
         )
 
         identities: list[ResourceIdentity] = []
@@ -113,6 +115,8 @@ def build_project_usage_from_pbs_jobs(
                 )
             )
 
+        is_personal = project == DEFAULT_PBS_PROJECT
+        
         context: dict[str, Any] = {
             "jobname": jobname,
             "project": project,
@@ -125,6 +129,7 @@ def build_project_usage_from_pbs_jobs(
                 time_window_end=window_end,
                 metrics=metrics,
                 context=context,
+                is_personal=is_personal,
                 extra=None,
                 identities=identities,
                 project_name=project,  # Extract project from context
@@ -163,6 +168,7 @@ def build_project_usage_from_accounting(
 
         vcpus_allocated = _to_int(row.get("used_ncpus"))
         raw_cpu_percent = _to_int(row.get("used_cpupercent"))
+        storage_allocated = _to_int(row.get("req_scratch_local"))
 
         # Convert cpupercent to 0-100 scale by dividing by vcpus
         used_cpu_percent = None
@@ -177,6 +183,7 @@ def build_project_usage_from_accounting(
             used_cpu_percent=used_cpu_percent,
             walltime_allocated=_to_int(row.get("req_walltime")),
             walltime_used=_to_int(row.get("used_walltime")),
+            storage_bytes_allocated=storage_allocated,
         )
 
         identities: list[ResourceIdentity] = []
@@ -190,6 +197,8 @@ def build_project_usage_from_accounting(
                 )
             )
 
+        is_personal = project == DEFAULT_PBS_PROJECT
+        
         context: dict[str, Any] = {
             "jobname": jobname,
             "project": project,
@@ -202,6 +211,7 @@ def build_project_usage_from_accounting(
                 time_window_end=end_dt,
                 metrics=metrics,
                 context=context,
+                is_personal=is_personal,
                 extra=None,
                 identities=identities,
                 project_name=project,  # Extract project from context

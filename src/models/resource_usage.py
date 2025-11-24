@@ -69,6 +69,9 @@ class ResourceUsageEvent(BaseModel):
     project_name: Optional[str] = Field(
         None, description="Project name extracted from context"
     )
+    is_personal: bool = Field(
+        default=False, description="Whether this is a personal project"
+    )
     metrics: ResourceUsageMetrics = Field(
         ..., description="Resource usage metrics"
     )
