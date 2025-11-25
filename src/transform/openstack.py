@@ -309,7 +309,7 @@ def build_project_usage_from_openstack(
     vcpu_samples = openstack_data.get("vcpu", [])
     cpu_usage_per_day_samples = openstack_data.get("cpu_usage_per_day", [])
     cpu_time_seconds_samples = openstack_data.get("cpu_time_seconds", [])
-    memory_current_samples = openstack_data.get("memory_current", [])
+    memory_usable_samples = openstack_data.get("memory_usable", [])
     memory_maximum_samples = openstack_data.get("memory_maximum", [])
     storage_allocated_samples = openstack_data.get("storage_allocated", [])
 
@@ -320,18 +320,9 @@ def build_project_usage_from_openstack(
     vcpu_map = build_server_vcpu_map(vcpu_samples)
     cpu_usage_per_day_map = build_server_cpu_time_map(cpu_usage_per_day_samples)
     cpu_time_seconds_map = build_server_cpu_time_map(cpu_time_seconds_samples)
-    memory_current_map = build_server_memory_map(memory_current_samples, unit="kb")
+    memory_usable_map = build_server_memory_map(memory_usable_samples, unit="kb")
     memory_maximum_map = build_server_memory_map(memory_maximum_samples, unit="kb")
     storage_allocated_map = build_server_memory_map(storage_allocated_samples, unit="b")
-
-    # test
-    counter = 0
-    for k, v in memory_current_map.items():
-        if memory_maximum_map[k] == v:
-            counter += 1
-        else:
-            print(f"Different memory for server {k}: current={v}, maximum={memory_maximum_map[k]}")
-    print(f"Number of servers with equal current and maximum memory: {counter}")
 
     # Enrich project_map with data from project_server_samples
     for sample in project_server_samples:
@@ -365,7 +356,7 @@ def build_project_usage_from_openstack(
 
         server_context: list[dict[str, Any]] = []
         total_vcpus = 0
-        total_ram_bytes_current = 0
+        total_ram_bytes_usable = 0
         total_ram_bytes_maximum = 0
         total_storage_bytes = 0
         total_cpu_time_seconds = 0.0
@@ -377,7 +368,7 @@ def build_project_usage_from_openstack(
 
             # Lookup vcpus and memory using uuid or server_id
             vcpus = 0
-            memory_current_bytes = 0
+            memory_usable_bytes = 0
             memory_maximum_bytes = 0
             storage_bytes = 0
             cpu_usage_per_day = 0.0
@@ -385,7 +376,7 @@ def build_project_usage_from_openstack(
 
             if uuid:
                 vcpus = vcpu_map.get(uuid, 0)
-                memory_current_bytes = memory_current_map.get(uuid, 0)
+                memory_usable_bytes = memory_usable_map.get(uuid, 0)
                 memory_maximum_bytes = memory_maximum_map.get(uuid, 0)
                 storage_bytes = storage_allocated_map.get(uuid, 0)
                 cpu_usage_per_day = cpu_usage_per_day_map.get(uuid, 0.0)
@@ -394,8 +385,8 @@ def build_project_usage_from_openstack(
             if not vcpus and server_id:
                 vcpus = vcpu_map.get(server_id, 0)
 
-            if not memory_current_bytes and server_id:
-                memory_current_bytes = memory_current_map.get(server_id, 0)
+            if not memory_usable_bytes and server_id:
+                memory_usable_bytes = memory_usable_map.get(server_id, 0)
 
             if not memory_maximum_bytes and server_id:
                 memory_maximum_bytes = memory_maximum_map.get(server_id, 0)
@@ -415,7 +406,7 @@ def build_project_usage_from_openstack(
                 used_cpu_percent = (cpu_usage_per_day * 100.0) / vcpus
 
             total_vcpus += vcpus
-            total_ram_bytes_current += memory_current_bytes
+            total_ram_bytes_usable += memory_usable_bytes
             total_ram_bytes_maximum += memory_maximum_bytes
             total_storage_bytes += storage_bytes
             total_cpu_time_seconds += cpu_time_seconds
@@ -430,7 +421,7 @@ def build_project_usage_from_openstack(
                     "name": srv.get("name"),
                     "region": srv.get("region"),
                     "vcpus": vcpus,
-                    "memory_current_bytes": memory_current_bytes,
+                    "memory_current_bytes": memory_maximum_bytes - memory_usable_bytes,
                     "memory_maximum_bytes": memory_maximum_bytes,
                     "storage_allocated_bytes": storage_bytes,
                     "used_cpu_percent": int(used_cpu_percent) if used_cpu_percent else None,
@@ -446,14 +437,14 @@ def build_project_usage_from_openstack(
         metrics = aggregate_metrics(
             cpu_time_seconds=int(total_cpu_time_seconds) if total_cpu_time_seconds else 0,
             ram_bytes_allocated=total_ram_bytes_maximum,
-            ram_bytes_used=total_ram_bytes_current,
+            ram_bytes_used=total_ram_bytes_maximum - total_ram_bytes_usable,
             vcpus_allocated=total_vcpus,
             storage_bytes_allocated=total_storage_bytes,
             used_cpu_percent=project_used_cpu_percent,
         )
 
         is_personal = is_personal_project(description)
-        
+
         context: dict[str, Any] = {
             "cloud": "openstack",
             "project": project_name or project_id,

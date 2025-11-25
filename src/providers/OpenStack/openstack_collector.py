@@ -23,7 +23,7 @@ PROM_QUERIES = {
     "vcpu": "count by (uuid) (libvirtd_domain_vcpu_time)",
     "cpu_usage_per_day": "sum by (uuid) (rate(libvirtd_domain_vcpu_time[24h])) / 1e9",
     "cpu_time_seconds": "sum by (uuid)(libvirtd_domain_vcpu_time) / 1e9",
-    "memory_current": "libvirtd_domain_balloon_current",
+    "memory_usable": "libvirtd_domain_balloon_current",
     "memory_maximum": "libvirtd_domain_balloon_maximum",
     "storage_allocated": "sum by (uuid) (libvirtd_domain_block_capacity)",
 }
@@ -89,7 +89,7 @@ def collect_openstack_inventory() -> dict[str, list[dict[str, Any]]]:
         "vcpu": _query_thanos(PROM_QUERIES["vcpu"]),
         "cpu_usage_per_day": _query_thanos(PROM_QUERIES["cpu_usage_per_day"]),
         "cpu_time_seconds": _query_thanos(PROM_QUERIES["cpu_time_seconds"]),
-        "memory_current": _query_thanos(PROM_QUERIES["memory_current"]),
+        "memory_usable": _query_thanos(PROM_QUERIES["memory_usable"]),
         "memory_maximum": _query_thanos(PROM_QUERIES["memory_maximum"]),
         "storage_allocated": _query_thanos(PROM_QUERIES["storage_allocated"]),
     }
