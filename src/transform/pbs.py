@@ -132,7 +132,7 @@ def build_project_usage_from_pbs_jobs(
                 is_personal=is_personal,
                 extra=None,
                 identities=identities,
-                project_name=project,  # Extract project from context
+                project_slug=project,  # PBS project name is the slug
             )
         )
 
@@ -214,7 +214,7 @@ def build_project_usage_from_accounting(
                 is_personal=is_personal,
                 extra=None,
                 identities=identities,
-                project_name=project,  # Extract project from context
+                project_slug=project,  # PBS project name is the slug
             )
         )
 

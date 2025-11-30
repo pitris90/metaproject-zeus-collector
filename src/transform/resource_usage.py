@@ -34,7 +34,7 @@ def build_resource_usage_event(
     context: dict[str, Any],
     extra: Optional[dict[str, Any]] = None,
     identities: Optional[List[ResourceIdentity]] = None,
-    project_name: Optional[str] = None,
+    project_slug: Optional[str] = None,
     is_personal: bool = False,
 ) -> ResourceUsageEvent:
     """
@@ -48,7 +48,9 @@ def build_resource_usage_event(
         context: Additional contextual information
         extra: Optional extra data
         identities: List of resource identities
-        project_name: Optional project name extracted from context
+        project_slug: Project slug for mapping to Zeus projects.
+                      For PBS: the project name (e.g., "my-project").
+                      For OpenStack: includes customer prefix (e.g., "metacentrum-my-project").
         is_personal: Whether this is a personal project
 
     Returns:
@@ -60,7 +62,7 @@ def build_resource_usage_event(
         time_window_start=time_window_start,
         time_window_end=time_window_end,
         collected_at=datetime.now(timezone.utc),
-        project_name=project_name,
+        project_slug=project_slug,
         is_personal=is_personal,
         metrics=metrics,
         context=context,

@@ -66,8 +66,9 @@ class ResourceUsageEvent(BaseModel):
     collected_at: datetime = Field(
         ..., description="Timestamp when data was collected"
     )
-    project_name: Optional[str] = Field(
-        None, description="Project name extracted from context"
+    project_slug: Optional[str] = Field(
+        None,
+        description="Project slug for mapping to Zeus projects. For PBS: the project name. For OpenStack: includes customer prefix (e.g., metacentrum-my-project)"
     )
     is_personal: bool = Field(
         default=False, description="Whether this is a personal project"

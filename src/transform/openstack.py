@@ -464,7 +464,7 @@ def build_project_usage_from_openstack(
             context=context,
             extra=None,
             identities=identities,
-            project_name=project_name or project_id,  # Extract project from context
+            project_slug=project_name or project_id,  # OpenStack project name includes customer prefix
             is_personal=is_personal,
         )
         events.append(event)
