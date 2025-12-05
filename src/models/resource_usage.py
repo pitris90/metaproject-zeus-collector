@@ -56,7 +56,7 @@ class ResourceUsageEvent(BaseModel):
     schema_version: str = Field(
         default="1.0", description="Schema version for compatibility"
     )
-    source: Literal["pbs", "openstack"] = Field(
+    source: Literal["pbs", "pbsAcct", "openstack"] = Field(
         ..., description="Data source identifier"
     )
     time_window_start: datetime = Field(

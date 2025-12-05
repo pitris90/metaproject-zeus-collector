@@ -206,7 +206,7 @@ def build_project_usage_from_accounting(
 
         events.append(
             build_resource_usage_event(
-                source="pbs",
+                source="pbsAcct",
                 time_window_start=start_dt,
                 time_window_end=end_dt,
                 metrics=metrics,
