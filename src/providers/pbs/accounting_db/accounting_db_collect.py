@@ -67,6 +67,7 @@ def fetch_accounting_records(
                 apr.date_time,
                 apr.end_time,
                 apr.jobname,
+                apr.project,
                 apr.req_mem,
                 apr.req_walltime,
                 apr.start_time,
