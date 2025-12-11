@@ -19,13 +19,13 @@ PROM_QUERIES = {
     "domains": "custom_openstack_domain_info",
     "project_servers": "custom_openstack_project_info",
     "projects": "openstack_identity_project_info",
-    "servers": "custom_openstack_server_info",
-    "vcpu": "count by (uuid) (libvirtd_domain_vcpu_time)",
+    "servers": "last_over_time(custom_openstack_server_info[24h])",
+    "vcpu": "count by (uuid) (last_over_time(libvirtd_domain_vcpu_time[24h]))",
     "cpu_usage_per_day": "sum by (uuid) (rate(libvirtd_domain_vcpu_time[24h])) / 1e9",
-    "cpu_time_seconds": "sum by (uuid)(libvirtd_domain_vcpu_time) / 1e9",
-    "memory_usable": "libvirtd_domain_balloon_current",
-    "memory_maximum": "libvirtd_domain_balloon_maximum",
-    "storage_allocated": "sum by (uuid) (libvirtd_domain_block_capacity)",
+    "cpu_time_seconds": "sum by (uuid)(max_over_time(libvirtd_domain_vcpu_time[24h])) / 1e9",
+    "memory_usable": "last_over_time(libvirtd_domain_balloon_current[24h])",
+    "memory_maximum": "last_over_time(libvirtd_domain_balloon_maximum[24h])",
+    "storage_allocated": "sum by (uuid) (last_over_time(libvirtd_domain_block_capacity[24h]))",
 }
 
 
