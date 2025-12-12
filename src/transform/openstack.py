@@ -288,8 +288,9 @@ def build_project_usage_from_openstack(
     """
     Transform OpenStack usage data into ResourceUsageEvent objects.
 
-    This function aggregates usage data by OpenStack project, combining
-    information from various OpenStack services (Nova, Cinder, etc.).
+    Creates one event per server instance (not per project) to enable
+    cumulative tracking in the API aggregation layer. This allows
+    deleted instances to be preserved in summary data.
 
     Args:
         openstack_data: Mapping name -> raw Thanos query results
@@ -297,7 +298,7 @@ def build_project_usage_from_openstack(
         window_end: End of the collection window
 
     Returns:
-        List of ResourceUsageEvent objects, one per project
+        List of ResourceUsageEvent objects, one per server instance
 
     """
 
@@ -341,6 +342,8 @@ def build_project_usage_from_openstack(
             project_info["domain_name"] = domain_map[domain_id].get("domain_name")
 
     events: list[ResourceUsageEvent] = []
+    
+    # Create one event per server instance (not per project)
     for project_id, project_info in project_map.items():
         project_name = project_info.get("project_name")
         domain_id = project_info.get("domain_id")
@@ -350,21 +353,21 @@ def build_project_usage_from_openstack(
 
         # Build identities from project name and description
         identities = _build_identities_from_project(project_name, description)
+        is_personal = is_personal_project(description)
 
         # Get servers for this project
         project_servers = server_map.get(project_id, [])
 
-        server_context: list[dict[str, Any]] = []
-        total_vcpus = 0
-        total_ram_bytes_usable = 0
-        total_ram_bytes_maximum = 0
-        total_storage_bytes = 0
-        total_cpu_time_seconds = 0.0
-        total_cpu_usage_weighted = 0.0
-
+        # Create one event per server
         for srv in project_servers:
             uuid = srv.get("uuid")
             server_id = srv.get("server_id")
+            
+            # Use uuid as the primary identifier, fall back to server_id
+            allocation_identifier = uuid or server_id
+            if not allocation_identifier:
+                # Skip servers without any identifier
+                continue
 
             # Lookup vcpus and memory using uuid or server_id
             vcpus = 0
@@ -405,68 +408,44 @@ def build_project_usage_from_openstack(
             if vcpus and cpu_usage_per_day:
                 used_cpu_percent = (cpu_usage_per_day * 100.0) / vcpus
 
-            total_vcpus += vcpus
-            total_ram_bytes_usable += memory_usable_bytes
-            total_ram_bytes_maximum += memory_maximum_bytes
-            total_storage_bytes += storage_bytes
-            total_cpu_time_seconds += cpu_time_seconds
-            # Weight CPU usage by vcpus for accurate project-level average
-            if vcpus and cpu_usage_per_day:
-                total_cpu_usage_weighted += cpu_usage_per_day * 100.0
+            # Build per-server metrics
+            server_metrics = aggregate_metrics(
+                cpu_time_seconds=int(cpu_time_seconds) if cpu_time_seconds else 0,
+                ram_bytes_allocated=memory_maximum_bytes,
+                ram_bytes_used=memory_maximum_bytes - memory_usable_bytes,
+                vcpus_allocated=vcpus,
+                storage_bytes_allocated=storage_bytes,
+                used_cpu_percent=int(used_cpu_percent) if used_cpu_percent else None,
+            )
 
-            server_context.append(
-                {
+            # Build per-server context
+            server_context: dict[str, Any] = {
+                "cloud": "openstack",
+                "project": project_name or project_id,
+                "project_id": project_id,
+                "domain": domain_name,
+                "domain_id": domain_id,
+                "region": region,
+                "server": {
                     "server_id": server_id,
                     "uuid": uuid,
                     "name": srv.get("name"),
                     "region": srv.get("region"),
-                    "vcpus": vcpus,
-                    "memory_current_bytes": memory_maximum_bytes - memory_usable_bytes,
-                    "memory_maximum_bytes": memory_maximum_bytes,
-                    "storage_allocated_bytes": storage_bytes,
-                    "used_cpu_percent": int(used_cpu_percent) if used_cpu_percent else None,
-                    "cpu_time_seconds": int(cpu_time_seconds),
-                }
+                },
+            }
+
+            event = build_resource_usage_event(
+                source="openstack",
+                time_window_start=window_start,
+                time_window_end=window_end,
+                metrics=server_metrics,
+                context=server_context,
+                extra={"allocation_identifier": allocation_identifier},
+                identities=identities,
+                project_slug=project_name or project_id,  # OpenStack project name includes customer prefix
+                is_personal=is_personal,
             )
-
-        # Calculate project-level used_cpu_percent
-        project_used_cpu_percent = None
-        if total_vcpus and total_cpu_usage_weighted:
-            project_used_cpu_percent = int(total_cpu_usage_weighted / total_vcpus)
-
-        metrics = aggregate_metrics(
-            cpu_time_seconds=int(total_cpu_time_seconds) if total_cpu_time_seconds else 0,
-            ram_bytes_allocated=total_ram_bytes_maximum,
-            ram_bytes_used=total_ram_bytes_maximum - total_ram_bytes_usable,
-            vcpus_allocated=total_vcpus,
-            storage_bytes_allocated=total_storage_bytes,
-            used_cpu_percent=project_used_cpu_percent,
-        )
-
-        is_personal = is_personal_project(description)
-
-        context: dict[str, Any] = {
-            "cloud": "openstack",
-            "project": project_name or project_id,
-            "project_id": project_id,
-            "domain": domain_name,
-            "domain_id": domain_id,
-            "region": region,
-            "vm_count": len(project_servers),
-            "servers": server_context,
-        }
-
-        event = build_resource_usage_event(
-            source="openstack",
-            time_window_start=window_start,
-            time_window_end=window_end,
-            metrics=metrics,
-            context=context,
-            extra=None,
-            identities=identities,
-            project_slug=project_name or project_id,  # OpenStack project name includes customer prefix
-            is_personal=is_personal,
-        )
-        events.append(event)
+            events.append(event)
 
     return events
+
